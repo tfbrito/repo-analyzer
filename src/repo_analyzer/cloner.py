@@ -19,7 +19,11 @@ class RepoCloner:
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=120,
             )
+        except subprocess.TimeoutExpired:
+            shutil.rmtree(self.tmp_dir, ignore_errors=True)
+            raise RuntimeError(f"Clone of {self.url} timed out after 120 seconds.")
         except subprocess.CalledProcessError as e:
             shutil.rmtree(self.tmp_dir, ignore_errors=True)
             raise RuntimeError(f"Failed to clone {self.url}: {e.stderr.strip()}") from e

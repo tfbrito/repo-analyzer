@@ -23,4 +23,11 @@ def analyze(context: dict, model: str = DEFAULT_MODEL) -> str:
         max_tokens=4096,
     )
 
-    return response.choices[0].message.content
+    if not response.choices:
+        raise RuntimeError(f"Model '{model}' returned an empty response. Try a different model with -m.")
+
+    content = response.choices[0].message.content
+    if not content:
+        raise RuntimeError(f"Model '{model}' returned no content. Try a different model with -m.")
+
+    return content

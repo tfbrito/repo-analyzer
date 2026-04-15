@@ -21,7 +21,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "-o", "--output",
-        default=None,
         help="Output file path (default: output/<repo-name>-analysis.md)",
     )
     parser.add_argument(
@@ -67,15 +66,20 @@ def main():
 
             print(f"Analyzing with {args.model}...")
             report = analyze(context, args.model)
+            try:
+                output_path.write_text(report)
+            except OSError as e:
+                print(f"Error: Could not write report to {output_path}: {e}", file=sys.stderr)
+                print(report)
+                sys.exit(1)
+
+        print(f"Report saved to: {output_path}")
     except RuntimeError as e:
-        print(f"Error: {e}")
+        print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
-        print(f"Error during analysis: {e}")
+        print(f"Error during analysis: {e}", file=sys.stderr)
         sys.exit(1)
-
-    output_path.write_text(report)
-    print(f"Report saved to: {output_path}")
 
 
 if __name__ == "__main__":

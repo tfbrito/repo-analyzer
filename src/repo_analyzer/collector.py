@@ -1,10 +1,10 @@
+import sys
 from pathlib import Path
 
 IGNORE_DIRS = {
     ".git", "node_modules", "__pycache__", "vendor", ".venv", "venv",
     "dist", "build", ".next", ".nuxt", "target", "bin", "obj",
     ".tox", ".mypy_cache", ".pytest_cache", "coverage", ".coverage",
-    "egg-info",
 }
 
 PRIORITY_FILES = [
@@ -56,24 +56,26 @@ def collect_context(repo_path: Path) -> dict:
     files = {}
     remaining = MAX_CONTEXT_CHARS - len(tree)
 
+    def _add_file(rel_path: str, filepath: Path) -> None:
+        """Read a file and add it to the collection if it fits the budget."""
+        nonlocal remaining
+        if rel_path in files:
+            return
+        content = _read_file(filepath)
+        if content and len(content) <= remaining:
+            files[rel_path] = content
+            remaining -= len(content)
+
     # 1. Priority files
     for filename in PRIORITY_FILES:
         filepath = repo_path / filename
         if filepath.is_file():
-            content = _read_file(filepath)
-            if content and len(content) <= remaining:
-                files[filename] = content
-                remaining -= len(content)
+            _add_file(filename, filepath)
 
     # 2. Security-relevant files
     for pattern in SECURITY_GLOBS:
         for filepath in repo_path.glob(pattern):
-            rel = str(filepath.relative_to(repo_path))
-            if rel not in files:
-                content = _read_file(filepath)
-                if content and len(content) <= remaining:
-                    files[rel] = content
-                    remaining -= len(content)
+            _add_file(str(filepath.relative_to(repo_path)), filepath)
 
     # 3. Code samples (smaller files first, root files prioritized)
     code_files = []
@@ -83,18 +85,14 @@ def collect_context(repo_path: Path) -> dict:
         rel = filepath.relative_to(repo_path)
         if str(rel) in files:
             continue
-        if any(part in IGNORE_DIRS for part in rel.parts):
+        if any(part in IGNORE_DIRS or part.endswith(".egg-info") for part in rel.parts):
             continue
         code_files.append((rel, filepath.stat().st_size))
 
     code_files.sort(key=lambda x: (len(x[0].parts), x[1]))
 
     for rel, _ in code_files[:MAX_CODE_SAMPLES]:
-        filepath = repo_path / rel
-        content = _read_file(filepath)
-        if content and len(content) <= remaining:
-            files[str(rel)] = content
-            remaining -= len(content)
+        _add_file(str(rel), repo_path / rel)
 
     return {"tree": tree, "files": files}
 
@@ -116,7 +114,7 @@ def _walk_tree(current: Path, lines: list, max_depth: int, depth: int):
         return
 
     for entry in entries:
-        if entry.name in IGNORE_DIRS:
+        if entry.name in IGNORE_DIRS or entry.name.endswith(".egg-info"):
             continue
 
         indent = "  " * depth
@@ -134,5 +132,6 @@ def _read_file(filepath: Path) -> str:
         if len(text) > MAX_FILE_CHARS:
             return text[:MAX_FILE_CHARS] + f"\n\n... (truncated, {len(text)} total chars)"
         return text
-    except Exception:
+    except (OSError, UnicodeDecodeError) as e:
+        print(f"Warning: Could not read {filepath}: {e}", file=sys.stderr)
         return ""

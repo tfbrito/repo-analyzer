@@ -35,15 +35,14 @@ def build_user_prompt(context: dict) -> str:
     Returns:
         Formatted string with repo structure and file contents.
     """
-    parts = []
+    parts = [
+        "# Repository Structure\n",
+        f"```\n{context['tree']}\n```\n",
+        "# File Contents\n",
+    ]
 
-    parts.append("# Repository Structure\n")
-    parts.append(f"```\n{context['tree']}\n```\n")
-
-    parts.append("# File Contents\n")
     for filename, content in context["files"].items():
-        parts.append(f"## {filename}\n")
-        parts.append(f"```\n{content}\n```\n")
+        parts.append(f"## {filename}\n\n```\n{content}\n```\n")
 
     parts.append("Please analyze this repository and produce the report.")
 
