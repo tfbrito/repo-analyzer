@@ -20,6 +20,7 @@ def analyze(context: dict, model: str = DEFAULT_MODEL) -> str:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": build_user_prompt(context)},
         ],
+        max_tokens=4096,
     )
 
     return response.choices[0].message.content
