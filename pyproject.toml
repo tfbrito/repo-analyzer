@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "repo-analyzer"
+version = "0.1.0"
+description = "AI agent that analyzes GitHub repositories"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+repo-analyzer = "repo_analyzer.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
