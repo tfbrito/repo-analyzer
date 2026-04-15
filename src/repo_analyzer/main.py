@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from .analyzer import DEFAULT_MODEL, analyze
 from .cloner import RepoCloner
 from .collector import collect_context
+from .html_report import generate_html, get_stylesheet
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,7 +74,16 @@ def main():
                 print(report)
                 sys.exit(1)
 
+            html_path = output_path.with_suffix(".html")
+            html_content = generate_html(report, repo_name)
+            html_path.write_text(html_content)
+
+            css_path = output_path.parent / "style.css"
+            if not css_path.exists():
+                css_path.write_text(get_stylesheet())
+
         print(f"Report saved to: {output_path}")
+        print(f"HTML report: {html_path}")
     except RuntimeError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
