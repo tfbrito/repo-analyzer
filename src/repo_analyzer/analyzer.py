@@ -4,7 +4,7 @@ from openai import OpenAI
 
 from .prompts import SYSTEM_PROMPT, build_user_prompt
 
-DEFAULT_MODEL = "google/gemini-2.5-flash"
+DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
 
 def analyze(context: dict, model: str = DEFAULT_MODEL) -> str:
